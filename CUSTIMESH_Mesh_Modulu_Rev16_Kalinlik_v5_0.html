@@ -441,7 +441,8 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px}
     <div class="thk-field">
      <div class="thk-field-lbl"><label for="thk-palette">Renk haritası</label><button type="button" id="thk-auto-range" class="thk-btn soft" style="padding:2px 6px;font-size:9.5px" disabled>Otomatik aralık</button></div>
      <select id="thk-palette">
-      <option value="ntop" selected>nTop Turbo · Mor → Mavi → Yeşil → Sarı → Kırmızı</option>
+      <option value="custimesh" selected>CUSTIMESH Aurora · Çivit → Turkuaz → Altın → Magenta</option>
+      <option value="ntop">nTop Turbo · Mor → Mavi → Yeşil → Sarı → Kırmızı</option>
       <option value="meshmixer">Kırmızı → Sarı → Mavi</option>
       <option value="viridis">Viridis (Bilimsel · Mor → Yeşil → Sarı)</option>
       <option value="thermal">Termal (Siyah → Kırmızı → Sarı → Beyaz)</option>
@@ -9907,6 +9908,17 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!mt('cm-modal').hid
 
 /* ===== Kalınlık analizi ===== */
 const THK_PALETTES = {
+  custimesh: [ // CUSTIMESH Aurora: çivit → mavi → turkuaz → altın → magenta (ince → kalın)
+    [0.00, [18, 8, 64]],
+    [0.14, [62, 30, 148]],
+    [0.28, [28, 92, 232]],
+    [0.42, [0, 184, 230]],
+    [0.55, [20, 230, 172]],
+    [0.68, [196, 244, 72]],
+    [0.80, [255, 196, 48]],
+    [0.90, [255, 96, 104]],
+    [1.00, [214, 24, 148]]
+  ],
   ntop: [
     [0.00, [48, 18, 59]],
     [0.10, [68, 93, 212]],
@@ -9960,7 +9972,7 @@ function thkSampleColor(t, paletteName, invert, useIso, rawVal, minVal, maxVal, 
   }
   let u = Math.max(0, Math.min(1, t));
   if (invert) u = 1 - u;
-  let stops = THK_PALETTES[paletteName] || THK_PALETTES.ntop;
+  let stops = THK_PALETTES[paletteName] || THK_PALETTES.custimesh;
   if (paletteName === 'safety') {
     const ratio = maxVal > minVal ? Math.max(0.05, Math.min(0.95, (threshVal - minVal) / (maxVal - minVal))) : 0.5;
     const r = invert ? 1 - ratio : ratio;
@@ -9997,7 +10009,7 @@ function thkSampleColor(t, paletteName, invert, useIso, rawVal, minVal, maxVal, 
 }
 
 function thkGradientCSS(paletteName, invert, direction = 'to right') {
-  const stops = THK_PALETTES[paletteName] || THK_PALETTES.ntop;
+  const stops = THK_PALETTES[paletteName] || THK_PALETTES.custimesh;
   const parts = stops.map(([p, c]) => {
     const pos = Math.round((invert ? 1 - p : p) * 100);
     return { pos, str: `rgb(${c[0]},${c[1]},${c[2]}) ${pos}%` };
