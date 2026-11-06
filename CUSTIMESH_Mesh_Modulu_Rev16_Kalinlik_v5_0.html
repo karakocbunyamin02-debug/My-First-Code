@@ -8592,6 +8592,39 @@ function cmThicknessV5(V0,F0,o,say){
   for(let t=0;t<nT;t++){const a=F[t*3]*3,b=F[t*3+1]*3,c=F[t*3+2]*3;
     const ax=V[a]-ox,ay=V[a+1]-oy,az=V[a+2]-oz,bx=V[b]-ox,by=V[b+1]-oy,bz=V[b+2]-oz,cx=V[c]-ox,cy=V[c+1]-oy,cz=V[c+2]-oz;
     vol[find(F[t*3])]+=ax*(by*cz-bz*cy)+ay*(bz*cx-bx*cz)+az*(bx*cy-by*cx);}
+  // İç boşluk (cavity) koruması: negatif hacimli bileşen, pozitif hacimli başka bir bileşenin İÇİNDE ise
+  // gerçek bir iç boşluktur (ör. içi boş kabuk); ters çevrilmez. Dışarıdaysa ters normalli katı sayılıp düzeltilir.
+  {
+    const rep=new Map();
+    for(let i=0;i<nv;i++){const r=find(i);if(vol[r]<0&&!rep.has(r))rep.set(r,i);}
+    if(rep.size&&rep.size<=32){
+      const tp=new Uint8Array(nT);let anyPos=false;
+      for(let t=0;t<nT;t++)if(vol[find(F[t*3])]>0){tp[t]=1;anyPos=true;}
+      if(anyPos){
+        const dirs=[[.5773502,.3217,.7501],[-.2673,.8571,.4414],[.3922,-.5547,.7337]];
+        const insideSolid=(px,py,pz)=>{
+          let votes=0;
+          for(const d of dirs){
+            const dx=d[0],dy=d[1],dz=d[2];let n=0;
+            for(let t=0;t<nT;t++){if(!tp[t])continue;
+              const a=F[t*3]*3,b=F[t*3+1]*3,c=F[t*3+2]*3;
+              const e1x=V[b]-V[a],e1y=V[b+1]-V[a+1],e1z=V[b+2]-V[a+2],e2x=V[c]-V[a],e2y=V[c+1]-V[a+1],e2z=V[c+2]-V[a+2];
+              const hx=dy*e2z-dz*e2y,hy=dz*e2x-dx*e2z,hz=dx*e2y-dy*e2x,det=e1x*hx+e1y*hy+e1z*hz;
+              if(Math.abs(det)<1e-14)continue;
+              const inv=1/det,sx=px-V[a],sy=py-V[a+1],sz=pz-V[a+2],u=inv*(sx*hx+sy*hy+sz*hz);
+              if(u<0||u>1)continue;
+              const qx=sy*e1z-sz*e1y,qy=sz*e1x-sx*e1z,qz=sx*e1y-sy*e1x,w=inv*(dx*qx+dy*qy+dz*qz);
+              if(w<0||u+w>1)continue;
+              if(inv*(e2x*qx+e2y*qy+e2z*qz)>1e-9)n++;
+            }
+            if(n&1)votes++;
+          }
+          return votes>=2;
+        };
+        for(const [r,i] of rep)if(insideSolid(V[i*3],V[i*3+1],V[i*3+2]))vol[r]=0;
+      }
+    }
+  }
   const tri=new Float32Array(nT*9),VN=new Float64Array(nv*3),vArea=new Float64Array(nv),adjN=new Uint32Array(nv+1);
   for(let t=0;t<nT;t++){
     const ia=F[t*3],ib=F[t*3+1],ic=F[t*3+2],sg=vol[find(ia)]<0?-1:1;
